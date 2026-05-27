@@ -1,8 +1,6 @@
 pipeline {
     agent any
-
     stages {
-
         stage('git checkout') {
             steps {
                 git branch: 'master',
@@ -10,7 +8,7 @@ pipeline {
                     credentialsId: 'Github-Credentials'
             }
         }
-         stage('Build the application') {
+        stage('Build the application') {
             steps {
                 bat 'mvn clean install'
             }
@@ -25,9 +23,8 @@ pipeline {
                 bat 'docker build -t tatiannah/triang7:1.0.0 .'
             }
         }
-     stage('Push docker image') {
+        stage('Push docker image') {
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhubpass',
@@ -35,13 +32,24 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )
                 ]) {
-
                     bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
-
                     bat 'docker push tatiannah/triang7:1.0.0'
                 }
             }
         }
-
-}
+    }       
+    post {
+        failure {
+            emailext body: 'Ce Build $BUILD_NUMBER a échoué',
+                     recipientProviders: [requestor()],
+                     subject: 'Build échoué',
+                     to: 'raltaty1704@gmail.com'
+        }
+        success {
+            emailext body: 'Ce Build $BUILD_NUMBER a réussi',
+                     recipientProviders: [requestor()],
+                     subject: 'Build réussi',
+                     to: 'raltaty1704@gmail.com'
+        }
+    }
 }
